@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyTracker Pro | Admin Management Console</title>
+    <link rel="icon" type="image/png" href="/icon.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN & Chart.js -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="bg-[#0b0f19] text-white min-h-screen flex flex-col">
+
+    <!-- Admin Header -->
+    <header class="border-b border-[var(--glass-border)] bg-[#131b2e]/80 backdrop-blur-md sticky top-0 z-40 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <img src="/icon.png" alt="Logo" class="h-9 w-9 rounded-lg shadow-md object-contain">
+                <div>
+                    <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">StudyTracker Pro</h1>
+                    <p class="text-[10px] text-indigo-300 font-semibold tracking-wider uppercase">Administrative Management Portal</p>
+                </div>
+            </div>
+            <div id="header-user-status" class="flex items-center gap-3">
+                <!-- User sign-in status injected here -->
+            </div>
+        </div>
+    </header>
+
+    <!-- Main App Container -->
+    <main id="app-container" class="flex-1 max-w-7xl w-full mx-auto px-4 py-8">
+        <div class="flex flex-col items-center justify-center min-h-[50vh] gap-3">
+            <div class="w-10 h-10 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
+            <p class="text-sm text-[var(--text-secondary)] font-medium">Verifying Administrator Credentials...</p>
+        </div>
+    </main>
+
+    <!-- Floating Modal Container -->
+    <div id="floating-modal" class="hidden relative z-50"></div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
+
