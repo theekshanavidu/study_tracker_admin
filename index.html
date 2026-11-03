@@ -1,52 +1,112 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
+
 <head>
     <meta charset="UTF-8">
+    <meta name="google-site-verification" content="J0l55wJ4YIqdkT85F1QcYDNMLgpdgYnwc28UBJkswdc" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StudyTracker Pro | Admin Management Console</title>
-    <link rel="icon" type="image/png" href="/icon.png">
+    <meta name="description" content="Study Tracker Pro is the ultimate Study Tracker application for students. Get the best AL Help, watch AL Recording sessions, and track your Maths Recording. Enhance your study routine today.">
+    <meta name="keywords" content="Study Tracker Pro, Study Tracker, Study, AL Help, AL Recording, Maths Recording">
+    <meta name="author" content="StudyTracker Pro">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.mathsrecoding.com/">
+    <meta property="og:title" content="Study Tracker Pro | Maths Recording, AL Recording & AL Help">
+    <meta property="og:description" content="Study Tracker Pro is the ultimate Study Tracker application for students. Get the best AL Help, watch AL Recording sessions, and track your Maths Recording. Enhance your study routine today.">
+    <meta property="og:image" content="https://www.mathsrecoding.com/icon.png">
 
-    <!-- Fonts -->
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://www.mathsrecoding.com/">
+    <meta property="twitter:title" content="Study Tracker Pro | Maths Recording, AL Recording & AL Help">
+    <meta property="twitter:description" content="Study Tracker Pro is the ultimate Study Tracker application for students. Get the best AL Help, watch AL Recording sessions, and track your Maths Recording. Enhance your study routine today.">
+    <meta property="twitter:image" content="https://www.mathsrecoding.com/icon.png">
+
+    <link rel="canonical" href="https://www.mathsrecoding.com/" />
+
+    <title>Study Tracker - Admin Portal</title>
+
+    <!-- Structured Data for Google (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Study Tracker Pro",
+      "alternateName": ["Study Tracker", "Maths Recording Tracker", "AL Help App"],
+      "url": "https://www.mathsrecoding.com/",
+      "description": "Study Tracker Pro is the ultimate Study Tracker for students. Get the best AL Help, watch AL Recording sessions, and track your Maths Recording. Enhance your study routine today.",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "All",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
+
+    <!-- DNS Preconnects for ultra-fast network loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://firestore.googleapis.com">
+    <link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    
+    <link rel="icon" type="image/png" href="/icon.png">
+    
+    <!-- Inline Critical CSS vs Deferred Styles if applicable, but style.css is local -->
+    <link rel="stylesheet" href="style.css">
 
-    <!-- Tailwind CSS CDN & Chart.js -->
+    <!-- External Libraries (Deferred so HTML parsing isn't blocked, jsPDF loaded dynamically on demand) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
-
-    <link rel="stylesheet" href="/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js" defer></script>
 </head>
-<body class="bg-[#0b0f19] text-white min-h-screen flex flex-col">
 
-    <!-- Admin Header -->
-    <header class="border-b border-[var(--glass-border)] bg-[#131b2e]/80 backdrop-blur-md sticky top-0 z-40 px-6 py-4">
-        <div class="max-w-7xl mx-auto flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <img src="/icon.png" alt="Logo" class="h-9 w-9 rounded-lg shadow-md object-contain">
-                <div>
-                    <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">StudyTracker Pro</h1>
-                    <p class="text-[10px] text-indigo-300 font-semibold tracking-wider uppercase">Administrative Management Portal</p>
-                </div>
+<body class="bg-dark text-white">
+
+    <div id="root" class="flex flex-col min-h-screen">
+        <!-- App Header will be rendered here -->
+        <header id="app-header" class="glass-panel sticky top-0 z-50 flex justify-between items-center px-8 py-4 mb-8">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="window.navigateTo('/home')">
+                <img src="/icon.png" alt="StudyTracker Logo" class="h-10 w-10 object-contain drop-shadow-md rounded">
+                <h1 class="text-2xl font-outfit font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">
+                    StudyTracker
+                </h1>
             </div>
-            <div id="header-user-status" class="flex items-center gap-3">
-                <!-- User sign-in status injected here -->
+            <div id="header-actions" class="flex gap-4 items-center">
+                <!-- Nav buttons will be injected -->
             </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main id="app-container" class="container mx-auto px-4 pb-20 flex-grow">
+            <!-- Dynamic Content -->
+        </main>
+
+        <!-- Subtle Background Copyright & Contact -->
+        <div class="fixed bottom-2 right-4 text-right z-50 pointer-events-auto">
+            <a href="https://t.me/StudyTrackerHelp" target="_blank" class="flex items-center gap-2 bg-[#0088cc] text-white px-3 py-2 rounded-full shadow-lg hover:bg-[#0077b5] transition-all transform hover:scale-105">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>
+                <span class="text-sm font-bold">Contact Telegram</span>
+            </a>
         </div>
-    </header>
-
-    <!-- Main App Container -->
-    <main id="app-container" class="flex-1 max-w-7xl w-full mx-auto px-4 py-8">
-        <div class="flex flex-col items-center justify-center min-h-[50vh] gap-3">
-            <div class="w-10 h-10 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
-            <p class="text-sm text-[var(--text-secondary)] font-medium">Verifying Administrator Credentials...</p>
+        <div class="fixed bottom-4 left-0 w-full text-center text-xs text-[var(--text-secondary)] opacity-40 pointer-events-none z-0">
+            &copy; 2026 StudyTracker Pro. All rights reserved.
+            &nbsp;|&nbsp;
         </div>
-    </main>
 
-    <!-- Floating Modal Container -->
-    <div id="floating-modal" class="hidden relative z-50"></div>
+        <!-- Floating Elements -->
+        <div id="floating-modal" class="hidden relative z-50"></div>
+    </div>
 
-    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="src/main.js"></script>
 </body>
-</html>
 
+</html>

@@ -25,6 +25,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
+// Enable robust multi-tab offline persistence with fallback so low/offline connections load instantly
 let firestoreDb;
 try {
   firestoreDb = initializeFirestore(app, {

@@ -1,119 +1,343 @@
-import {
-  onAuthStateChanged,
-  signOut,
-  signInWithPopup,
-  signInWithEmailAndPassword
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { auth, googleProvider, ADMIN_UID } from "./firebase.js";
-import { renderAdmin } from "./admin.js";
-import { sanitizeInput } from "./security.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { doc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { auth, db, ADMIN_UID } from "./firebase.js";
+import * as UI from "./ui.js";
+import { initParticles } from "./particles.js";
+import { initGlobalInputProtection } from "./security.js";
 
-const appContainer = document.getElementById('app-container');
-const headerUserStatus = document.getElementById('header-user-status');
+// Initialize global real-time input sanitization & XSS protection
+initGlobalInputProtection();
 
-function renderLogin(errorMessage = null) {
-  if (headerUserStatus) headerUserStatus.innerHTML = '';
-  
-  appContainer.innerHTML = `
-    <div class="flex items-center justify-center min-h-[65vh] px-4">
-        <div class="smart-card w-full max-w-md p-8 border border-indigo-500/20 shadow-2xl relative overflow-hidden">
-            <div class="text-center mb-6">
-                <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center text-2xl shadow-lg mb-3">
-                    🛡️
-                </div>
-                <h2 class="text-2xl font-bold text-[var(--text-primary)]">Admin Portal Login</h2>
-                <p class="text-xs text-[var(--text-secondary)] mt-1">Authorized Administrative Personnel Only</p>
-            </div>
+let currentUser = null;
 
-            ${errorMessage ? `
-                <div class="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
-                    <span>⚠️</span>
-                    <span>${errorMessage}</span>
-                </div>
-            ` : ''}
-
-            <!-- Google Admin Sign-in Button -->
-            <button id="admin-google-login-btn" type="button" class="w-full py-3 px-4 rounded-xl bg-white text-gray-800 font-bold text-sm hover:bg-gray-100 transition-all flex items-center justify-center gap-2.5 shadow-md mb-4 cursor-pointer">
-                <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-                <span>Sign in with Google Admin</span>
-            </button>
-
-            <div class="flex items-center gap-3 my-4">
-                <div class="flex-1 h-[1px] bg-[var(--glass-border)]"></div>
-                <span class="text-[10px] text-[var(--text-secondary)] uppercase">Or Email & Password</span>
-                <div class="flex-1 h-[1px] bg-[var(--glass-border)]"></div>
-            </div>
-
-            <form id="admin-email-form" class="space-y-3.5">
-                <div>
-                    <label class="text-[11px] font-bold text-[var(--text-secondary)] uppercase block mb-1">Email</label>
-                    <input type="email" id="admin-email" placeholder="admin@mathsrecoding.com" class="smart-input text-xs" required>
-                </div>
-                <div>
-                    <label class="text-[11px] font-bold text-[var(--text-secondary)] uppercase block mb-1">Password</label>
-                    <input type="password" id="admin-password" placeholder="••••••••" class="smart-input text-xs" required>
-                </div>
-                <button type="submit" class="btn-primary w-full py-3 text-xs font-bold mt-2">
-                    Log In to Console
-                </button>
-            </form>
-        </div>
-    </div>
-  `;
-
-  document.getElementById('admin-google-login-btn').onclick = async () => {
+// --- Router System ---
+function navigateTo(path) {
+    if (window.location.pathname === path) return;
+    window.history.pushState({}, '', path);
     try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (err) {
-      renderLogin("Google sign-in error: " + err.message);
-    }
-  };
-
-  document.getElementById('admin-email-form').onsubmit = async (e) => {
-    e.preventDefault();
-    const email = sanitizeInput(document.getElementById('admin-email').value);
-    const pwd = document.getElementById('admin-password').value;
-    try {
-      await signInWithEmailAndPassword(auth, email, pwd);
-    } catch (err) {
-      renderLogin("Authentication failed: " + err.message);
-    }
-  };
+        if (path && path !== '/' && path !== '/welcome' && path !== '/login' && path !== '/register' && path !== '/reset-password') {
+            sessionStorage.setItem('study_last_active_path', path);
+        }
+    } catch (e) {}
+    router();
 }
 
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    renderLogin();
-    return;
-  }
+async function router() {
+    const path = window.location.pathname === '/' ? '/home' : window.location.pathname;
+    try {
+        if (path && path !== '/' && path !== '/welcome' && path !== '/login' && path !== '/register' && path !== '/reset-password') {
+            sessionStorage.setItem('study_last_active_path', path);
+        }
+    } catch (e) {}
+    console.log(`Navigating to: ${path}`);
+    
+    // Clean up chemistry game if we're navigating away
+    if (path !== '/organicgame' && window.unmountChemistryGame) {
+        window.unmountChemistryGame();
+    }
 
-  // Strict Administrator UID validation
-  if (user.uid !== ADMIN_UID) {
-    await signOut(auth);
-    renderLogin("Access Denied: This Google account is not authorized as Administrator.");
-    return;
-  }
+    // Clean up countdown intervals when navigating away
+    if (path !== '/login' && path !== '/register' && path !== '/reset-password' && window.authCountdownInterval) {
+        clearInterval(window.authCountdownInterval);
+        window.authCountdownInterval = null;
+    }
+    if (path !== '/home' && window.examCountdownInterval) {
+        clearInterval(window.examCountdownInterval);
+        window.examCountdownInterval = null;
+    }
 
-  // Render Header Controls
-  if (headerUserStatus) {
-    headerUserStatus.innerHTML = `
-      <div class="flex items-center gap-3">
-          <div class="text-right hidden sm:block">
-              <p class="text-xs font-bold text-[var(--text-primary)]">Admin Console</p>
-              <p class="text-[10px] text-emerald-400 font-semibold">● Online</p>
-          </div>
-          <button id="admin-logout-btn" class="btn-ghost text-xs py-1.5 px-3 border border-red-500/30 text-red-400 hover:bg-red-500/10 rounded-xl cursor-pointer">
-              Sign Out
-          </button>
-      </div>
+
+    // Toggle auth background mode (removes periodic table canvas on login/register/reset)
+    if (path === '/login' || path === '/register' || path === '/' || path === '/welcome' || path === '/reset-password') {
+        document.body.classList.add('auth-page-mode');
+    } else {
+        document.body.classList.remove('auth-page-mode');
+    }
+
+    // Handle chat fullscreen mode & unread tracking
+    if (path === '/chat') {
+        localStorage.setItem('study_last_chat_viewed_time', Date.now().toString());
+        sessionStorage.setItem('study_was_in_chat', 'true');
+        if (UI.updateUnreadChatBadges) UI.updateUnreadChatBadges(0);
+    } else {
+        document.body.classList.remove('chat-fullscreen-mode');
+        if (sessionStorage.getItem('study_was_in_chat') === 'true') {
+            sessionStorage.removeItem('study_was_in_chat');
+            localStorage.setItem('study_last_chat_viewed_time', Date.now().toString());
+            if (UI.updateUnreadChatBadges) UI.updateUnreadChatBadges(0);
+        }
+    }
+
+    // Add smooth transition effect without blank screen
+    const container = document.getElementById('app-container');
+    if (container && (!container.innerHTML.trim() || container.innerHTML.includes('route-loading-indicator'))) {
+        container.innerHTML = `
+            <div id="route-loading-indicator" class="flex flex-col items-center justify-center min-h-[45vh] gap-3">
+                <div class="w-9 h-9 border-3 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin"></div>
+                <p class="text-xs text-[var(--text-secondary)] font-medium tracking-wide">Loading content...</p>
+            </div>
+        `;
+        container.style.opacity = '1';
+    }
+
+    setTimeout(async () => {
+        // Update Header safely
+        try {
+            await UI.renderHeader(currentUser, navigateTo, signOut);
+        } catch (e) {
+            console.warn("renderHeader fallback:", e);
+        }
+
+        // Public Routes
+        if (path === '/' || path === '/welcome') {
+            UI.renderWelcome(navigateTo);
+            animatePageIn();
+            return;
+        }
+        if (path === '/login') {
+            UI.renderLogin(navigateTo);
+            animatePageIn();
+            return;
+        }
+        if (path === '/register') {
+            UI.renderRegister(navigateTo);
+            animatePageIn();
+            return;
+        }
+        if (path === '/reset-password') {
+            UI.renderResetPassword(navigateTo);
+            animatePageIn();
+            return;
+        } else if (path === '/simulation') {
+            navigateTo('/tutes');
+            return;
+        } else if (path === '/contact') {
+            UI.renderContact(navigateTo, currentUser);
+            animatePageIn();
+            return;
+        } else if (path === '/resources') {
+            UI.renderResources(navigateTo);
+            animatePageIn();
+            return;
+        }
+
+        // Protected Routes
+        if (!currentUser) {
+            navigateTo('/welcome');
+            return;
+        }
+
+        // Profile check using fast local cache so navigation never stalls on slow network
+        if (path !== '/profile') {
+            if (currentUser.uid !== ADMIN_UID) {
+                try {
+                    const d = await UI.getUserProfile(currentUser.uid);
+                    if (d) {
+                        if (!d.phone || !d.birthday || !d.firstName || !d.lastName || !d.examYear || !d.email) {
+                            alert("Please complete your profile details to continue.\nකරුණාකර ඉදිරියට යාමට පෙර ඔබගේ ගිණුමේ විස්තර සම්පූර්ණ කරන්න.");
+                            navigateTo('/profile');
+                            return;
+                        }
+                    }
+                } catch(e) {
+                    console.error("Profile check error:", e);
+                }
+            }
+        }
+
+        if (path === '/home') {
+            await UI.renderHome(currentUser);
+            /* ========================================================================= */
+            /* ===== EXAM TIMETABLE POPUP CODE - DISABLED ============================== */
+            /* ========================================================================= */
+            // UI.checkExamTimetablePopup(currentUser);
+            /* ========================================================================= */
+        } else if (path === '/organicgame') {
+            await UI.renderOrganicGame();
+        } else if (path === '/profile') {
+            await UI.renderProfile(currentUser);
+        } else if (path === '/timetable') {
+            await UI.renderTimetable(currentUser);
+        } else if (path === '/recordings') {
+            const hasAccess = await UI.checkLectureHallAccess(currentUser, navigateTo);
+            if (hasAccess) {
+                UI.renderSubjects(navigateTo);
+            } else {
+                return;
+            }
+        } else if (path === '/live') {
+            await UI.renderLiveClasses(currentUser, navigateTo);
+        } else if (path === '/chat') {
+            await UI.renderCommunityChat(currentUser, navigateTo);
+        } else if (path === '/adminpanel') {
+            await UI.renderAdmin(currentUser);
+        } else if (path === '/tutes') {
+            await UI.renderTutes(navigateTo, currentUser);
+        } else if (path.startsWith('/tutes/')) {
+            const parts = path.split('/');
+            const subjectId = parts[2];
+            await UI.renderTuteSubject(subjectId, navigateTo, currentUser);
+        }
+        // Dynamic Routes for Recordings
+        else if (path.startsWith('/recording/')) {
+            const hasAccess = await UI.checkLectureHallAccess(currentUser, navigateTo);
+            if (!hasAccess) {
+                return;
+            }
+            const parts = path.split('/');
+            const subject = parts[2];
+            const type = parts[3];
+            const lesson = parts[4];
+
+            if (subject && type && lesson) {
+                const day = lesson.replace('lesson', '');
+                await UI.openLessonPage(subject, type, day, currentUser);
+            } else if (subject && type) {
+                await UI.renderLessons(subject, type, navigateTo, currentUser);
+            } else if (subject) {
+                UI.renderType(subject, navigateTo);
+            }
+        }
+
+        animatePageIn();
+        UI.updateMobileNav(path);
+    }, 150);
+}
+
+function animatePageIn() {
+    const container = document.getElementById('app-container');
+    container.style.opacity = '0';
+    container.style.transform = 'translateY(20px)';
+
+    setTimeout(() => {
+        container.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+        container.style.opacity = '1';
+        container.style.transform = 'translateY(0)';
+    }, 50);
+}
+
+// --- Service Worker & Push Permissions ---
+function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('SW Registered', reg))
+            .catch(err => console.error('SW Register Fallback:', err));
+    }
+}
+
+async function requestNotificationPermission() {
+    if ('Notification' in window) {
+        const permission = await Notification.requestPermission();
+        console.log('Notification permission:', permission);
+        return permission;
+    }
+    return 'denied';
+}
+
+// Function to get a cookie value
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+}
+
+// Function to set a cookie value
+function setCookie(name, value, days = 365) {
+    const date = new Date();
+    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+    const expires = "; expires=" + date.toUTCString();
+    document.cookie = name + "=" + (value || "")  + expires + "; path=/; SameSite=Lax";
+}
+
+// Function to remove a cookie
+function removeCookie(name) {
+    document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax';
+}
+
+// --- Fast App Initialization (Runs immediately without waiting for heavy external scripts) ---
+
+function renderAccessDeniedScreen(user) {
+    const container = document.getElementById('app-container');
+    if (!container) return;
+    container.innerHTML = `
+        <div class="min-h-[75vh] flex items-center justify-center px-4">
+            <div class="smart-card max-w-md w-full text-center p-8 border border-red-500/30 bg-red-500/5 backdrop-blur-xl rounded-2xl shadow-2xl">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-3xl">
+                    🚫
+                </div>
+                <h2 class="text-2xl font-bold text-red-400 mb-2">අනවසර පිවිසුමකි</h2>
+                <h3 class="text-base font-semibold text-red-300/80 mb-3">Access Denied</h3>
+                <p class="text-sm text-[var(--text-secondary)] mb-6 leading-relaxed">
+                    මෙම Admin Portal එක වෙත පිවිසීමට අවසර ඇත්තේ පරිපාලකවරුන්ට (Admins) පමණි.<br>
+                    ඔබගේ ගිණුම (<span class="font-semibold text-[var(--text-primary)]">${user.email || user.uid}</span>) සඳහා Admin අවසර නොමැත.
+                </p>
+                <div class="flex flex-col gap-3">
+                    <a href="https://www.mathsrecoding.com" class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2">
+                        <span>🌐</span> Go to Student App
+                    </a>
+                    <button id="access-denied-logout-btn" class="w-full py-2.5 px-4 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--glass-border)] text-[var(--text-primary)] border border-[var(--glass-border)] font-semibold transition-all">
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
     `;
+    const logoutBtn = document.getElementById('access-denied-logout-btn');
+    if (logoutBtn) {
+        logoutBtn.onclick = async () => {
+            await signOut(auth);
+            window.location.href = '/login';
+        };
+    }
+}
 
-    document.getElementById('admin-logout-btn').onclick = async () => {
-      await signOut(auth);
-    };
-  }
+function initApp() {
+    initParticles();
+    registerServiceWorker();
+    UI.startLiveClassesListener();
 
-  // Render Admin Dashboard
-  await renderAdmin(user);
-});
+    onAuthStateChanged(auth, async (user) => {
+        currentUser = user;
+        if (currentUser && currentUser.uid === ADMIN_UID) {
+            currentUser.displayName = "Admin";
+        }
 
+        // Track user activity and notifications (Unlimited simultaneous devices allowed)
+        if (currentUser) {
+            UI.trackUserActivity(currentUser.uid);
+            UI.listenForNotifications(currentUser);
+            UI.listenForUnreadChat(currentUser);
+            UI.checkNewYearPopup(currentUser);
+            if (window.checkAndDisplayGlobalNotification) window.checkAndDisplayGlobalNotification(currentUser);
+            requestNotificationPermission().catch(() => {});
+        } else {
+            UI.listenForNotifications(null);
+            UI.listenForUnreadChat(null);
+        }
+
+        // Redirect if on root or welcome and logged in
+        if ((!window.location.pathname || window.location.pathname === '/' || window.location.pathname === '/welcome') && currentUser) {
+            let targetPath = '/adminpanel';
+            try {
+                const savedPath = sessionStorage.getItem('study_last_active_path');
+                if (savedPath && savedPath !== '/' && savedPath !== '/welcome' && savedPath !== '/login' && savedPath !== '/register' && savedPath !== '/reset-password') {
+                    targetPath = savedPath;
+                }
+            } catch (e) {}
+            navigateTo(targetPath);
+        } else {
+            router();
+        }
+    });
+}
+
+window.addEventListener('popstate', router);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    initApp();
+}
+
+// Expose navigateTo to window if needed for inline onclicks
+window.navigateTo = navigateTo;
